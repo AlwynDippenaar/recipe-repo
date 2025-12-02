@@ -20,18 +20,18 @@
             <a class="nav-link" href="create.php">Create</a>
           </li>
 
-          <?php if (!isset($_SESSION['user_id']) || !isset($_SESSION['username'])) { ?>              
+          <?php if (!isset($_SESSION['user_id']) || !isset($_SESSION['username'])) { ?>
             <li class="nav-item">
               <a class="nav-link" href="signup.php">Sign up</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" href="login.php">Log in</a>
             </li>              
-          <?php  } else { ?>                    
-            <li class="nav-item">                  
+          <?php  } else { ?>
+            <li class="nav-item">
               <a class="nav-link" href="profile.php"><?php echo $_SESSION['username'];?></a>
             </li>
-            <li class="nav-item">                  
+            <li class="nav-item">
               <a class="nav-link" href="logout.php">Log Out</a>
             </li>
           <?php } ?>
