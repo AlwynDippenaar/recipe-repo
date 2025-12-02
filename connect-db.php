@@ -41,10 +41,10 @@
 // http://www.cs.virginia.eda/~up3f/cs4750/demo/
 
 /** F25, PHP (on GCP, local XAMPP, or CS server) connect to MySQL (on CS server) **/
-$username = 'mqp8th'; 
-$password = 'dbproject';
+$username = 'qwf3nj'; 
+$password = 'BoehDB123!';
 $host = 'mysql01.cs.virginia.edu';
-$dbname = 'mqp8th';
+$dbname = 'qwf3nj_d';
 $dsn = "mysql:host=$host;dbname=$dbname";
 ////////////////////////////////////////////
 
