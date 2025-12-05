@@ -1,5 +1,7 @@
 <?php
 
+
+
 function getFavoritedRecipesByUser($user_id)
 {
     global $db;
@@ -14,13 +16,16 @@ function getFavoritedRecipesByUser($user_id)
 
     $stmt = $db->prepare($query);
     $stmt->bindValue(':uid', $user_id, PDO::PARAM_INT);
-    $stmt->execute();
-    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $stmt->closeCursor();
 
-    return $results;
+    try {
+        $stmt->execute();
+    } catch (PDOException $e) {
+        echo "<pre>SQL ERROR:\n" . $e->getMessage() . "</pre>";
+        return [];
+    }
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
 
 
 

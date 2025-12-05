@@ -15,8 +15,6 @@ $current_email = $_SESSION['email'];
 $user_recipes = getRecipesByUser($user_id);
 $favorited_recipes = getFavoritedRecipesByUser($user_id);
 
-echo $user_id;
-
 $success = "";
 $error = "";
 
@@ -129,7 +127,7 @@ if (isset($_POST['delete_account'])) {
     <?php else: ?>
         <div class="list-group mb-4">
             <?php foreach ($user_recipes as $recipe): ?>
-                <a href="recipe.php?id=<?= $recipe['id'] ?>" class="list-group-item list-group-item-action">
+                <a href="recipe.php?id=<?= $recipe['recipe_id'] ?>" class="list-group-item list-group-item-action">
                     <h5 class="mb-1"><?= htmlspecialchars($recipe['recipe_title']) ?></h5>
 
                     <div><small>Cook Time: <?= htmlspecialchars($recipe['cook_time']) ?></small></div>
