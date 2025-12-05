@@ -12,6 +12,10 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $current_username = $_SESSION['username'];
 $current_email = $_SESSION['email'];
+$user_recipes = getRecipesByUser($user_id);
+$favorited_recipes = getFavoritedRecipesByUser($user_id);
+
+echo $user_id;
 
 $success = "";
 $error = "";
@@ -103,11 +107,38 @@ if (isset($_POST['delete_account'])) {
 
     <h3>Favorites</h3>
 
-    <p>display favorited recipes here</p>
+    <?php if (empty($favorited_recipes)): ?>
+        <p>You haven't favorited any recipes yet.</p>
+    <?php else: ?>
+        <div class="list-group mb-4">
+            <?php foreach ($favorited_recipes as $recipe): ?>
+                <a href="recipe.php?id=<?= $recipe['recipe_id'] ?>" class="list-group-item list-group-item-action">
+                    <h5 class="mb-1"><?= htmlspecialchars($recipe['recipe_title']) ?></h5>
+
+                    <div><small>Cook Time: <?= htmlspecialchars($recipe['cook_time']) ?> mins</small></div>
+                    <div><small>Created on <?= htmlspecialchars($recipe['recipe_date_time']) ?></small></div>
+                </a>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
 
     <h3>Your Recipes</h3>
-    
-    <p>display recipes you've written here</p>
+
+    <?php if (empty($user_recipes)): ?>
+        <p>You haven't written any recipes yet.</p>
+    <?php else: ?>
+        <div class="list-group mb-4">
+            <?php foreach ($user_recipes as $recipe): ?>
+                <a href="recipe.php?id=<?= $recipe['id'] ?>" class="list-group-item list-group-item-action">
+                    <h5 class="mb-1"><?= htmlspecialchars($recipe['recipe_title']) ?></h5>
+
+                    <div><small>Cook Time: <?= htmlspecialchars($recipe['cook_time']) ?></small></div>
+                    <div><small>Created on <?= htmlspecialchars($recipe['recipe_date_time'] ?? 'Unknown date') ?></small></div>
+                </a>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
 
     <h3>[Need some sections for adding preferences, appliances, etc.]</h3>
 

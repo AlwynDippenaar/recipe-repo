@@ -1,5 +1,66 @@
 <?php
 
+function getFavoritedRecipesByUser($user_id)
+{
+    global $db;
+
+    $query = "
+        SELECT r.*
+        FROM user_favourites uf
+        INNER JOIN recipe r ON uf.recipe_id = r.recipe_id
+        WHERE uf.user_id = :uid
+        ORDER BY r.recipe_id DESC
+    ";
+
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':uid', $user_id, PDO::PARAM_INT);
+    $stmt->execute();
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->closeCursor();
+
+    return $results;
+}
+
+
+
+
+function getRecipesByUser($user_id)
+{
+    global $db;
+
+    $query = "SELECT * FROM recipe WHERE user_id = :uid ORDER BY recipe_id DESC";
+
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':uid', $user_id, PDO::PARAM_INT);
+    $stmt->execute();
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->closeCursor();
+
+    return $results;
+}
+
+
+function getRecipes($count)
+{
+    global $db;
+
+    $count = (int)$count;
+    if ($count <= 0) {
+        return [];
+    }
+
+    $query = "SELECT * FROM recipe ORDER BY recipe_id DESC LIMIT :count";
+
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':count', $count, PDO::PARAM_INT);
+    $stmt->execute();
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->closeCursor();
+
+    return $results;
+}
+
+
 function createUser($username, $email, $password)
 {
     global $db;
