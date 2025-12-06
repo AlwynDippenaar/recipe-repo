@@ -1,12 +1,16 @@
 <?php
 require('connect-db.php');
-require('recipe-db.php');    // will add insertRecipe(), insertRecipeContains(), insertRecipeUses()
+require('user-functions.php');
+require('recipe-db.php');    // includes insertRecipe(), insertRecipeContains(), insertRecipeUses(), insertInstruction()
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
+
+$all_prefs = getAllUserPreferences();
+$selected_prefs = $_POST['recipe_preferences'] ?? [];
 
 $message = "";
 
@@ -18,11 +22,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $quantities = $_POST['quantity'] ?? [];
     $units = $_POST['unit'] ?? [];
     $kitchenware = $_POST['kitchenware'] ?? [];
+    $instructions = $_POST['instruction_text'] ?? [];
 
     if (empty($title) || empty($desc) || empty($cook_time)) {
         $message = "Please fill in the title, description, and cook time.";
     } elseif (empty($ingredients)) {
         $message = "Please add at least one ingredient.";
+    } elseif (empty(array_filter($instructions))) {
+        $message = "Please add at least one instruction.";
     } else {
         // Insert recipe
         $recipe_id = insertRecipe($title, $desc, $cook_time, $_SESSION['user_id']);
@@ -45,10 +52,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        // Insert instructions
+        $step = 1;
+        foreach ($instructions as $text) {
+            $text = trim($text);
+            if ($text !== "") {
+                insertInstruction($recipe_id, $step, $text);
+                $step++;
+            }
+        }
+
+        // Insert recipe preferences
+        foreach ($recipe_prefs as $pref_id) {
+            $pref_id = (int)$pref_id;
+            $query = "INSERT INTO recipe_satisfies (recipe_id, pref_id) VALUES (:rid, :pid)";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(':rid', $recipe_id, PDO::PARAM_INT);
+            $stmt->bindValue(':pid', $pref_id, PDO::PARAM_INT);
+            $stmt->execute();
+}
+
+
         header("Location: recipe.php?id=$recipe_id");
         exit();
     }
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -87,6 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="number" name="cook_time" class="form-control" required>
         </div>
 
+        <!-- INGREDIENTS -->
         <h4>Ingredients</h4>
         <div id="ingredients-list">
             <div class="row mb-2 ingredient-row">
@@ -106,6 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <button type="button" class="btn btn-secondary mb-3" id="add-ingredient">Add Ingredient</button>
 
+        <!-- KITCHENWARE -->
         <h4>Kitchenware</h4>
         <div id="kitchenware-list">
             <div class="row mb-2 kw-row">
@@ -119,14 +150,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <button type="button" class="btn btn-secondary mb-3" id="add-kw">Add Kitchenware</button>
 
+        <!-- INSTRUCTIONS -->
+        <h4>Instructions</h4>
+        <div id="instructions-list">
+            <div class="row mb-2 instruction-row">
+                <div class="col-11">
+                    <textarea name="instruction_text[]" class="form-control" placeholder="Step description" required></textarea>
+                </div>
+                <div class="col-1">
+                    <button type="button" class="btn btn-danger remove-instruction">&times;</button>
+                </div>
+            </div>
+        </div>
+        <button type="button" class="btn btn-secondary mb-3" id="add-instruction">Add Instruction</button>
+
         <br>
+
+        <!-- Recipe Preferences -->
+        <h4>Recipe Preferences</h4>
+        <p>Select which preferences this recipe satisfies:</p>
+        <div class="mb-3">
+            <?php foreach ($all_prefs as $pref): ?>
+                <div class="form-check form-check-inline">
+                    <input 
+                        class="form-check-input" 
+                        type="checkbox" 
+                        name="recipe_preferences[]" 
+                        value="<?= $pref['pref_id'] ?>" 
+                        id="pref<?= $pref['pref_id'] ?>"
+                        <?= in_array($pref['pref_id'], $selected_prefs) ? 'checked' : '' ?>
+                    >
+                    <label class="form-check-label" for="pref<?= $pref['pref_id'] ?>">
+                        <?= htmlspecialchars($pref['title']) ?>
+                    </label>
+                </div>
+            <?php endforeach; ?>
+        </div>
 
         <button type="submit" class="btn btn-success mt-4 mb-4">Post Recipe!</button>
     </form>
 </div>
 
 <script>
-// Ingredients dynamic fields
+// --- INGREDIENTS ---
 document.getElementById('add-ingredient').addEventListener('click', () => {
     const container = document.getElementById('ingredients-list');
     const div = document.createElement('div');
@@ -153,7 +219,7 @@ document.addEventListener('click', function(e){
     }
 });
 
-// Kitchenware dynamic fields
+// --- KITCHENWARE ---
 document.getElementById('add-kw').addEventListener('click', () => {
     const container = document.getElementById('kitchenware-list');
     const div = document.createElement('div');
@@ -171,6 +237,27 @@ document.getElementById('add-kw').addEventListener('click', () => {
 document.addEventListener('click', function(e){
     if(e.target && e.target.classList.contains('remove-kw')){
         e.target.closest('.kw-row').remove();
+    }
+});
+
+// --- INSTRUCTIONS ---
+document.getElementById('add-instruction').addEventListener('click', () => {
+    const container = document.getElementById('instructions-list');
+    const div = document.createElement('div');
+    div.classList.add('row', 'mb-2', 'instruction-row');
+    div.innerHTML = `
+        <div class="col-11">
+            <textarea name="instruction_text[]" class="form-control" placeholder="Step description" required></textarea>
+        </div>
+        <div class="col-1">
+            <button type="button" class="btn btn-danger remove-instruction">&times;</button>
+        </div>`;
+    container.appendChild(div);
+});
+
+document.addEventListener('click', function(e){
+    if(e.target && e.target.classList.contains('remove-instruction')){
+        e.target.closest('.instruction-row').remove();
     }
 });
 </script>

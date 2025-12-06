@@ -1,4 +1,74 @@
 <?php
+
+function insertInstruction($recipe_id, $step_number, $text) {
+    global $db;
+
+    $query = "INSERT INTO instruction (recipe_id, instruction_number, instruction_text)
+              VALUES (:rid, :num, :txt)";
+
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':rid', $recipe_id, PDO::PARAM_INT);
+    $stmt->bindValue(':num', $step_number, PDO::PARAM_INT);
+    $stmt->bindValue(':txt', $text, PDO::PARAM_STR);
+    $stmt->execute();
+}
+
+
+function getInstructionsByRecipe($recipe_id) {
+    global $db;
+
+    $stmt = $db->prepare("
+        SELECT instruction_number, instruction_text
+        FROM instruction
+        WHERE recipe_id = :rid
+        ORDER BY instruction_number ASC
+    ");
+
+    $stmt->bindValue(':rid', (int)$recipe_id, PDO::PARAM_INT);
+    $stmt->execute();
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+function searchRecipesByPreferences(array $pref_ids) {
+    global $db;
+
+    // If no preferences selected, return all recipes
+    if (empty($pref_ids)) {
+        $stmt = $db->prepare("SELECT * FROM recipe ORDER BY recipe_date_time DESC");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Build placeholders for the IN clause
+    $placeholders = implode(',', array_fill(0, count($pref_ids), '?'));
+
+    // Query recipes that satisfy ALL selected preferences
+    $sql = "
+        SELECT r.*
+        FROM recipe r
+        INNER JOIN recipe_satisfies rs ON r.recipe_id = rs.recipe_id
+        WHERE rs.pref_id IN ($placeholders)
+        GROUP BY r.recipe_id
+        HAVING COUNT(DISTINCT rs.pref_id) = " . count($pref_ids) . "
+        ORDER BY r.recipe_date_time DESC
+    ";
+
+    $stmt = $db->prepare($sql);
+
+    // Bind the preference IDs
+    foreach ($pref_ids as $i => $pid) {
+        $stmt->bindValue($i + 1, $pid, PDO::PARAM_INT);
+    }
+
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+
+
 function searchRecipes($query)
 {
     global $db;

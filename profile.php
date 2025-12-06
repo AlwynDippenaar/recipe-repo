@@ -14,6 +14,9 @@ $current_username = $_SESSION['username'];
 $current_email = $_SESSION['email'];
 $user_recipes = getRecipesByUser($user_id);
 $favorited_recipes = getFavoritedRecipesByUser($user_id);
+$all_prefs = getAllUserPreferences();
+$user_prefs = getUserPreferences($user_id);
+$user_pref_ids = array_column($user_prefs, 'pref_id');
 
 $success = "";
 $error = "";
@@ -75,6 +78,41 @@ if (isset($_POST['delete_account'])) {
     header("Location: signup.php?deleted=1");
     exit();
 }
+
+// ---------------------
+// Assign Preference
+// ---------------------
+if (isset($_POST['assign_preference'])) {
+    $pref_id = (int)$_POST['preference_id'];
+
+    if (assignPreferenceToUser($user_id, $pref_id)) {
+        $success = "Preference added.";
+        $user_pref_ids[] = $pref_id;
+    } else {
+        $error = "Failed to add preference";
+    }
+
+    $user_prefs = getUserPreferences($user_id);
+    $user_pref_ids = array_column($user_prefs, 'pref_id');
+}
+
+// ---------------------
+// Unassign Preference
+// ---------------------
+if (isset($_POST['unassign_preference'])) {
+    $pref_id = (int)$_POST['preference_id'];
+
+    if (unassignPreferenceFromUser($user_id, $pref_id)) {
+        $success = "Preference removed.";
+        $user_pref_ids = array_diff($user_pref_ids, [$pref_id]);
+    } else {
+        $error = "Failed to remove preference.";
+    }
+
+    $user_prefs = getUserPreferences($user_id);
+    $user_pref_ids = array_column($user_prefs, 'pref_id');
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -93,7 +131,7 @@ if (isset($_POST['delete_account'])) {
 <div class="container mt-4">
 
     <h1>Your Profile</h1>
-    <p><strong>Logged in as:</strong> <?= $current_username ?> | <?= htmlspecialchars($current_email) ?></p>
+    <p><strong>Logged in as:</strong> <?= htmlspecialchars($current_username) ?> | <?= htmlspecialchars($current_email) ?></p>
 
     <?php if ($success): ?>
         <div class="alert alert-success"><?= $success ?></div>
@@ -104,7 +142,6 @@ if (isset($_POST['delete_account'])) {
     <?php endif; ?>
 
     <h3>Favorites</h3>
-
     <?php if (empty($favorited_recipes)): ?>
         <p>You haven't favorited any recipes yet.</p>
     <?php else: ?>
@@ -112,7 +149,6 @@ if (isset($_POST['delete_account'])) {
             <?php foreach ($favorited_recipes as $recipe): ?>
                 <a href="recipe.php?id=<?= $recipe['recipe_id'] ?>" class="list-group-item list-group-item-action">
                     <h5 class="mb-1"><?= htmlspecialchars($recipe['recipe_title']) ?></h5>
-
                     <div><small>Cook Time: <?= htmlspecialchars($recipe['cook_time']) ?> mins</small></div>
                     <div><small>Created on <?= htmlspecialchars($recipe['recipe_date_time']) ?></small></div>
                 </a>
@@ -121,7 +157,6 @@ if (isset($_POST['delete_account'])) {
     <?php endif; ?>
 
     <h3>Your Recipes</h3>
-
     <?php if (empty($user_recipes)): ?>
         <p>You haven't written any recipes yet.</p>
     <?php else: ?>
@@ -129,7 +164,6 @@ if (isset($_POST['delete_account'])) {
             <?php foreach ($user_recipes as $recipe): ?>
                 <a href="recipe.php?id=<?= $recipe['recipe_id'] ?>" class="list-group-item list-group-item-action">
                     <h5 class="mb-1"><?= htmlspecialchars($recipe['recipe_title']) ?></h5>
-
                     <div><small>Cook Time: <?= htmlspecialchars($recipe['cook_time']) ?></small></div>
                     <div><small>Created on <?= htmlspecialchars($recipe['recipe_date_time'] ?? 'Unknown date') ?></small></div>
                 </a>
@@ -137,23 +171,52 @@ if (isset($_POST['delete_account'])) {
         </div>
     <?php endif; ?>
 
+    <h3>Your Preferences</h3>
+    <?php if (!empty($user_pref_ids)): ?>
+        <div class="mb-3">
+            <?php foreach ($user_prefs as $pref): ?>
+                <form method="POST" class="d-inline me-2 mb-2">
+                    <input type="hidden" name="preference_id" value="<?= $pref['pref_id'] ?>">
+                    <button name="unassign_preference" class="btn btn-success">
+                        <?= htmlspecialchars($pref['title']) ?> ✕
+                    </button>
+                </form>
+            <?php endforeach; ?>
+        </div>
+    <?php else: ?>
+        <p>You have not selected any preferences yet.</p>
+    <?php endif; ?>
 
-    <h3>[Need some sections for adding preferences, appliances, etc.]</h3>
+    <hr>
 
+    <h4>Add Preferences</h4>
+    <p>Select preferences to assign:</p>
+    <div class="mb-4">
+        <?php foreach ($all_prefs as $pref): ?>
+            <?php if (!in_array($pref['pref_id'], $user_pref_ids)): ?>
+                <form method="POST" class="d-inline me-2 mb-2">
+                    <input type="hidden" name="preference_id" value="<?= $pref['pref_id'] ?>">
+                    <button name="assign_preference" class="btn btn-primary">
+                        <?= htmlspecialchars($pref['title']) ?> +
+                    </button>
+                </form>
+            <?php endif; ?>
+        <?php endforeach; ?>
+    </div>
 
     <h3>Manage Your Account</h3>
 
     <!-- Update Username -->
     <h4 class="mt-4">Update Username</h4>
     <form method="POST" class="mb-4" style="max-width: 400px;">
-        <input type="text" name="new_username" class="form-control mb-2" placeholder="New username" value=<?= $current_username?> required>
+        <input type="text" name="new_username" class="form-control mb-2" placeholder="New username" value="<?= htmlspecialchars($current_username) ?>" required>
         <button name="update_username" class="btn btn-dark">Update Username</button>
     </form>
 
     <!-- Update Email -->
     <h4 class="mt-4">Update Email</h4>
     <form method="POST" class="mb-4" style="max-width: 400px;">
-        <input type="email" name="new_email" class="form-control mb-2" placeholder="New email" value=<?= $current_email?> required>
+        <input type="email" name="new_email" class="form-control mb-2" placeholder="New email" value="<?= htmlspecialchars($current_email) ?>" required>
         <button name="update_email" class="btn btn-dark">Update Email</button>
     </form>
 
@@ -174,7 +237,6 @@ if (isset($_POST['delete_account'])) {
 </div>
 
 <?php include('footer.html'); ?>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

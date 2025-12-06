@@ -10,6 +10,7 @@ if (!isset($_GET['id'])) {
 
 $recipe_id = intval($_GET['id']);
 $recipe = getRecipeById($recipe_id);
+$instructions = getInstructionsByRecipe($recipe_id);
 
 if (!$recipe) {
     die("Recipe not found.");
@@ -25,7 +26,6 @@ if (isset($_SESSION['user_id'])) {
     $is_fav = userFavorited($_SESSION['user_id'], $recipe_id);
 }
 
-// Handle favourite toggle
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SESSION['user_id'])) {
     if (isset($_POST['favorite'])) {
         addFavorite($_SESSION['user_id'], $recipe_id);
@@ -79,6 +79,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SESSION['user_id'])) {
 
     <strong>Cook Time:</strong>
     <span><?php echo htmlspecialchars($recipe['cook_time']); ?> minutes</span>
+
+    <h3>Instructions</h3>
+    <?php if (empty($instructions)): ?>
+        <p>No instructions listed.</p>
+    <?php else: ?>
+        <ol>
+            <?php foreach ($instructions as $inst): ?>
+                <li><?php echo nl2br(htmlspecialchars($inst['instruction_text'])); ?></li>
+            <?php endforeach; ?>
+        </ol>
+    <?php endif; ?>
 
     <hr>
 

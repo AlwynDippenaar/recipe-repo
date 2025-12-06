@@ -1,6 +1,89 @@
 <?php
 
 
+function assignPreferenceToUser($user_id, $pref_id)
+{
+    global $db;
+
+    $query = "
+        INSERT INTO user_has_preferences (user_id, pref_id)
+        VALUES (:uid, :pid)
+    ";
+
+    try {
+        $stmt = $db->prepare($query);
+        $stmt->bindValue(':uid', $user_id, PDO::PARAM_INT);
+        $stmt->bindValue(':pid', $pref_id, PDO::PARAM_INT);
+        $stmt->execute();
+        return true;
+    } catch (PDOException $e) {
+        echo "<pre>SQL ERROR:\n" . $e->getMessage() . "</pre>";
+        return false;
+    }
+}
+
+function unassignPreferenceFromUser($user_id, $pref_id)
+{
+    global $db;
+
+    $query = "
+        DELETE FROM user_has_preferences
+        WHERE user_id = :uid AND pref_id = :pid
+        LIMIT 1
+    ";
+
+    try {
+        $stmt = $db->prepare($query);
+        $stmt->bindValue(':uid', $user_id, PDO::PARAM_INT);
+        $stmt->bindValue(':pid', $pref_id, PDO::PARAM_INT);
+        $stmt->execute();
+        return true;
+    } catch (PDOException $e) {
+        echo "<pre>SQL ERROR:\n" . $e->getMessage() . "</pre>";
+        return false;
+    }
+}
+
+
+
+
+function getAllUserPreferences()
+{
+    global $db;
+
+    $query = "SELECT * FROM user_preferences ORDER BY pref_id DESC";
+
+    try {
+        $stmt = $db->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        echo "<pre>SQL ERROR:\n" . $e->getMessage() . "</pre>";
+        return [];
+    }
+}
+
+
+function getUserPreferences($user_id) {
+    global $db;
+
+    $query = "
+        SELECT uhp.pref_id, p.title
+        FROM user_has_preferences uhp
+        JOIN user_preferences p ON uhp.pref_id = p.pref_id
+        WHERE uhp.user_id = :uid
+    ";
+    $stmt = $db->prepare($query);
+    $stmt->bindValue(':uid', $user_id);
+    $stmt->execute();
+    $prefs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->closeCursor();
+
+    return $prefs;
+}
+
+
+
 
 function getFavoritedRecipesByUser($user_id)
 {
@@ -45,7 +128,7 @@ function getRecipesByUser($user_id)
 }
 
 
-function getRecipes($count)
+function getRandomRecipes($count)
 {
     global $db;
 
@@ -54,7 +137,7 @@ function getRecipes($count)
         return [];
     }
 
-    $query = "SELECT * FROM recipe ORDER BY recipe_id DESC LIMIT :count";
+    $query = "SELECT * FROM recipe ORDER BY RAND() LIMIT :count";
 
     $stmt = $db->prepare($query);
     $stmt->bindValue(':count', $count, PDO::PARAM_INT);
@@ -64,6 +147,7 @@ function getRecipes($count)
 
     return $results;
 }
+
 
 
 function createUser($username, $email, $password)

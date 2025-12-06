@@ -1,6 +1,9 @@
 <?php
 require('connect-db.php');
-// require('request-db.php');
+require('user-functions.php');
+session_start();
+
+$random_recipes = getRandomRecipes(10);
 ?>
 
 <!DOCTYPE html>
@@ -17,59 +20,29 @@ require('connect-db.php');
 
     <div class="container">
         <h1>Home</h1>
-        <?php echo "Test Working !"; ?>
-        <p><a href="https://www.figma.com/design/pHKg8WBmK02dQs0Ic1Npgl/Recipe-Repo?node-id=0-1&t=VmZuYC9p8hERfEtH-1">The Figma, for reference (delete this link when we're done)</a></p>
-
 
         <p>Find classic and modern recipes to suit any needs, restrictions, and available ingredients you have!</p>
-        <!-- Would be great to have this button redirect to log in page rather than create recipe if not logged in -->
+
         <?php if (isset($_SESSION["username"])) { ?>
             <a class="btn btn-dark" href="create.php">Add Your Own Recipes</a>
         <?php } else { ?>
             <a class="btn btn-dark" href="login.php">Add Your Own Recipes</a>
-        <?php }?>
-        
-
-        <h2 class="mt-5">Top Recipes</h2>
-        <div class="container">
-            <!-- put in top 3 recipes, idk how we define top -->
-            <div class="row">
-                <div class="col">
-                    <img src="" alt="recipe 1">
-                    <p>Recipe description</p>
-                </div>
-                <div class="col">
-                    <img src="" alt="recipe 2">
-                    <p>Recipe description</p>
-                </div>
-                <div class="col">
-                    <img src="" alt="recipe 3">
-                    <p>Recipe description</p>
-                </div>
-            </div>
-        </div>
-
-        <?php if (isset($_SESSION["username"])) { ?>
-        <h2 class="mt-5">Recommended Recipe</h2>
-        <div class="container">
-            <!-- determine a recommended recipe from user preferences, just exclude if not logged in, ig -->
-            <div class="row">
-                <div class="col">
-                    <strong>Suits Your Ingredients</strong>
-                    <p>Recommended to you based on ___ ingredients you have on hand</p>
-                    <strong>Suits Your Tastes</strong>
-                    <p>Recommended to you based on ___ preferences you have expressed</p>
-                    <strong>Suits Your Appliances</strong>
-                    <p>Recommended to you based on ___ appliances and utensils you have available</p>
-                </div>
-                <div class="col">
-                    <img src="" alt="big recipe image">
-                </div>
-            </div>
-        </div>
         <?php } ?>
         
-        <!-- could add a section for latest reviews, like on the Figma mockup, but idk if that rly makes sense -->
+        <?php if (isset($_SESSION["username"])) { ?>
+            <h2 class="mt-5">Recommended Recipes</h2>
+
+            <div class="list-group mb-4">
+                <?php foreach ($random_recipes as $recipe): ?>
+                    <a href="recipe.php?id=<?= $recipe['recipe_id'] ?>" class="list-group-item list-group-item-action">
+                        <h5 class="mb-1"><?= htmlspecialchars($recipe['recipe_title']) ?></h5>
+                        <div><small>Cook Time: <?= htmlspecialchars($recipe['cook_time']) ?> mins</small></div>
+                        <div><small>Created on <?= htmlspecialchars($recipe['recipe_date_time']) ?></small></div>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php } ?>
+        
     </div>
 
     <?php include('footer.html'); ?>
